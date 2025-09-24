@@ -1,2 +1,2 @@
-idf_component_register(SRCS "lcd_i2c.c"
-                    INCLUDE_DIRS ".")
+FILE(GLOB_RECURSE app_sources ${CMAKE_CURRENT_LIST_DIR}/*.*)
+idf_component_register(SRCS ${app_sources})

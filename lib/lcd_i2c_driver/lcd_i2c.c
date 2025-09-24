@@ -4,10 +4,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#define LCD_I2C_ADDRESS 0x27
-
-#define I2C_MASTER_NUM I2C_NUM_0
-
 // Commands
 #define LCD_CMD_CLEAR_DISPLAY 0x01
 #define LCD_CMD_RETURN_HOME 0x02
@@ -46,12 +42,23 @@
 
 static const char *TAG = "LCD_I2C";
 
+// Driver state
+static i2c_port_t g_i2c_port;
+static uint8_t g_i2c_address;
+static uint8_t g_cols;
+static uint8_t g_rows;
+
 // Static functions
 static esp_err_t lcd_send_nibble(uint8_t nibble, uint8_t flags);
 static esp_err_t lcd_send_byte(uint8_t byte, uint8_t flags);
 static esp_err_t lcd_write_i2c(uint8_t data);
 
-void lcd_init(void) {
+esp_err_t lcd_i2c_init(const lcd_i2c_config_t *config) {
+    g_i2c_port = config->i2c_port;
+    g_i2c_address = config->i2c_address;
+    g_cols = config->cols;
+    g_rows = config->rows;
+
     vTaskDelay(pdMS_TO_TICKS(100)); // Wait for >40ms after power-on
 
     // Put LCD into 4-bit mode
@@ -66,26 +73,27 @@ void lcd_init(void) {
     // Configure LCD
     lcd_send_byte(LCD_CMD_FUNCTION_SET | LCD_FLAG_4BIT_MODE | LCD_FLAG_2LINE | LCD_FLAG_5x8DOTS, 0);
     lcd_send_byte(LCD_CMD_DISPLAY_CONTROL | LCD_FLAG_DISPLAY_ON | LCD_FLAG_CURSOR_OFF | LCD_FLAG_BLINK_OFF, 0);
-    lcd_clear();
+    lcd_i2c_clear();
     lcd_send_byte(LCD_CMD_ENTRY_MODE_SET | LCD_FLAG_ENTRY_LEFT | LCD_FLAG_ENTRY_SHIFT_DECREMENT, 0);
 
     ESP_LOGI(TAG, "LCD initialized successfully");
+    return ESP_OK;
 }
 
-void lcd_clear(void) {
+void lcd_i2c_clear(void) {
     lcd_send_byte(LCD_CMD_CLEAR_DISPLAY, 0);
     vTaskDelay(pdMS_TO_TICKS(5)); // this command takes a long time
 }
 
-void lcd_set_cursor(uint8_t row, uint8_t col) {
+void lcd_i2c_set_cursor(uint8_t row, uint8_t col) {
     uint8_t row_offsets[] = {0x00, 0x40, 0x14, 0x54};
-    if (row > 3) {
-        row = 3;
+    if (row >= g_rows) {
+        row = g_rows - 1;
     }
     lcd_send_byte(LCD_CMD_SET_DDRAM_ADDR | (col + row_offsets[row]), 0);
 }
 
-void lcd_send_string(const char *str) {
+void lcd_i2c_send_string(const char *str) {
     while (*str) {
         lcd_send_byte((uint8_t)(*str), LCD_BIT_RS);
         str++;
@@ -95,10 +103,10 @@ void lcd_send_string(const char *str) {
 static esp_err_t lcd_write_i2c(uint8_t data) {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (LCD_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, true);
+    i2c_master_write_byte(cmd, (g_i2c_address << 1) | I2C_MASTER_WRITE, true);
     i2c_master_write_byte(cmd, data, true);
     i2c_master_stop(cmd);
-    esp_err_t err = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, pdMS_TO_TICKS(1000));
+    esp_err_t err = i2c_master_cmd_begin(g_i2c_port, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
     return err;
 }
