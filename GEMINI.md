@@ -4,12 +4,15 @@
 
 This project is an ESP32-based clock that utilizes a DS1307 Real-Time Clock (RTC) module. It is built using the ESP-IDF framework and PlatformIO.
 
-*   **Purpose:** A functional digital clock with the ability to maintain time even when powered off, thanks to the DS1307 RTC with a backup battery.
+*   **Purpose:** A smart alarm clock with advanced features, built on an ESP32 and utilizing a DS1307 Real-Time Clock (RTC) module for timekeeping.
 *   **Main Technologies:** C, ESP-IDF, PlatformIO
 *   **Hardware:**
     *   ESP32 development board (`esp32dev`)
     *   DS1307 RTC module connected via I2C (SDA: GPIO21, SCL: GPIO22)
 *   **Core Functionality:**
+    *   Displays current date and time.
+    *   Allows setting up to 5 distinct alarms.
+    *   Each alarm can store a specific time and days of the week for recurring triggers.
     *   Initializes the DS1307 RTC.
     *   If the RTC is not running, it sets the time to a placeholder value (the current compile time).
     *   Periodically reads the time from the RTC and logs it to the serial monitor.
