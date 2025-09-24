@@ -1,6 +1,8 @@
 #include "ds1307.h"
 #include <stdbool.h>
 
+static i2c_port_t i2c_port;
+
 static uint8_t bcd_to_dec(uint8_t val) {
     return (val >> 4) * 10 + (val & 0x0F);
 }
@@ -9,11 +11,12 @@ static uint8_t dec_to_bcd(uint8_t val) {
     return ((val / 10) << 4) | (val % 10);
 }
 
-esp_err_t ds1307_init(i2c_port_t i2c_port, int sda_pin, int scl_pin) {
+esp_err_t ds1307_init(const ds1307_config_t *config) {
+    i2c_port = config->i2c_port;
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,
-        .sda_io_num = sda_pin,
-        .scl_io_num = scl_pin,
+        .sda_io_num = config->sda_pin,
+        .scl_io_num = config->scl_pin,
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         .master.clk_speed = 100000,
@@ -22,7 +25,7 @@ esp_err_t ds1307_init(i2c_port_t i2c_port, int sda_pin, int scl_pin) {
     return i2c_driver_install(i2c_port, conf.mode, 0, 0, 0);
 }
 
-esp_err_t ds1307_set_time(i2c_port_t i2c_port, rtc_time_t *time) {
+esp_err_t ds1307_set_time(const rtc_time_t *time) {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (DS1307_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, true);
@@ -42,7 +45,7 @@ esp_err_t ds1307_set_time(i2c_port_t i2c_port, rtc_time_t *time) {
     return ret;
 }
 
-esp_err_t ds1307_get_time(i2c_port_t i2c_port, rtc_time_t *time) {
+esp_err_t ds1307_get_time(rtc_time_t *time) {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (DS1307_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, true);
@@ -71,7 +74,7 @@ esp_err_t ds1307_get_time(i2c_port_t i2c_port, rtc_time_t *time) {
     ret = i2c_master_cmd_begin(i2c_port, cmd, 1000 / portTICK_PERIOD_MS);
     i2c_cmd_link_delete(cmd);
 
-    time->seconds = bcd_to_dec(time->seconds);
+    time->seconds = bcd_to_dec(time->seconds & 0x7F); // Mask the CH bit
     time->minutes = bcd_to_dec(time->minutes);
     time->hours = bcd_to_dec(time->hours);
     time->day = bcd_to_dec(time->day);
@@ -82,7 +85,7 @@ esp_err_t ds1307_get_time(i2c_port_t i2c_port, rtc_time_t *time) {
     return ret;
 }
 
-esp_err_t ds1307_is_running(i2c_port_t i2c_port, bool *is_running) {
+esp_err_t ds1307_is_running(bool *is_running) {
     uint8_t seconds;
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
@@ -109,7 +112,7 @@ esp_err_t ds1307_is_running(i2c_port_t i2c_port, bool *is_running) {
     return ret;
 }
 
-esp_err_t ds1307_reset(i2c_port_t i2c_port) {
+esp_err_t ds1307_reset(void) {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (DS1307_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, true);

@@ -17,10 +17,16 @@ typedef struct {
     uint8_t year;
 } rtc_time_t;
 
-esp_err_t ds1307_init(i2c_port_t i2c_port, int sda_pin, int scl_pin);
-esp_err_t ds1307_set_time(i2c_port_t i2c_port, rtc_time_t *time);
-esp_err_t ds1307_get_time(i2c_port_t i2c_port, rtc_time_t *time);
-esp_err_t ds1307_is_running(i2c_port_t i2c_port, bool *is_running);
-esp_err_t ds1307_reset(i2c_port_t i2c_port);
+typedef struct {
+    i2c_port_t i2c_port;
+    int sda_pin;
+    int scl_pin;
+} ds1307_config_t;
+
+esp_err_t ds1307_init(const ds1307_config_t *config);
+esp_err_t ds1307_set_time(const rtc_time_t *time);
+esp_err_t ds1307_get_time(rtc_time_t *time);
+esp_err_t ds1307_is_running(bool *is_running);
+esp_err_t ds1307_reset(void);
 
 #endif // DS1307_H
