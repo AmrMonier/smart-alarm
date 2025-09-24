@@ -41,7 +41,10 @@ This project is managed by PlatformIO. Here are the common commands:
     *   `src/`: Main application code.
     *   `include/`: Project header files.
     *   `lib/`: Project-specific (private) libraries.
+        *   `button_reader/`: A custom driver for push buttons.
         *   `ds1307_driver/`: A custom driver for the DS1307 RTC.
+        *   `lcd_i2c_driver/`: A custom driver for LCD I2C displays.
+        *   `rotary_encoder_driver/`: A custom driver for rotary encoders.
     *   `test/`: Unit tests.
 *   **Dependencies:** Libraries are managed by the PlatformIO Library Manager.
 *   **Configuration:** The project is configured via `platformio.ini`.
