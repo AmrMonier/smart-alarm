@@ -45,6 +45,7 @@ This project is managed by PlatformIO. Here are the common commands:
     *   `include/`: Project header files.
     *   `lib/`: Project-specific (private) libraries.
         *   `button_reader/`: A custom driver for push buttons.
+        *   `buzzer_driver/`: A custom driver for an active buzzer.
         *   `ds1307_driver/`: A custom driver for the DS1307 RTC.
         *   `lcd_i2c_driver/`: A custom driver for LCD I2C displays.
         *   `rotary_encoder_driver/`: A custom driver for rotary encoders.
@@ -61,3 +62,13 @@ A custom driver for the DS1307 is located in `lib/ds1307_driver`. It provides th
 *   `ds1307_get_time()`: Reads the time from the RTC.
 *   `ds1307_is_running()`: Checks if the RTC oscillator is running.
 *   `ds1307_reset()`: Resets the RTC to its initial state, as if the battery was removed. This is useful for testing the time initialization logic. To use it, uncomment the call to this function in `src/main.c`.
+
+## Buzzer Driver
+
+A custom driver for an active buzzer is located in `lib/buzzer_driver`. It provides a non-blocking, task-based interface to play sequences of beeps.
+
+*   `buzzer_init(gpio_pin, default_note)`: Initializes the buzzer driver on a specific GPIO pin. It can be configured with a default note, or `NULL` can be passed to use a hardcoded default.
+*   `buzzer_play_note(note)`: Plays a note defined by a `buzzer_note_t` struct, which includes play duration, pause duration, and repeat count.
+*   `buzzer_play_default_note()`: Plays the default note that was configured during initialization.
+*   `buzzer_stop()`: Immediately stops any currently playing note.
+*   `buzzer_is_playing()`: Returns `true` if the buzzer is currently active.
