@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -7,6 +8,8 @@
 #include "lcd_i2c.h"
 #include "button_reader.h"
 #include "rotary_encoder.h"
+#include "driver/gpio.h"
+#include "buzzer_driver.h"
 
 static const char *TAG = "APP_MAIN";
 
@@ -25,6 +28,7 @@ static const char *TAG = "APP_MAIN";
 #define ROTARY_CLK_GPIO GPIO_NUM_19
 #define ROTARY_DT_GPIO  GPIO_NUM_18
 #define ROTARY_SW_GPIO  GPIO_NUM_23
+#define BUZZER_GPIO 2
 
 // --- Button Context ---
 typedef struct {
@@ -56,6 +60,17 @@ void on_sw_button_event(button_handle_t handle, button_event_t event, void* user
 
 void on_general_button_event(button_handle_t handle, button_event_t event, void* user_data) {
     char button_label = *(char*)user_data;
+    if (button_label == 'A') {
+        if (event == BUTTON_EVENT_PRESS) {
+            if (buzzer_is_playing()) {
+                ESP_LOGI(TAG, "Button A pressed. Stopping default buzzer note.");
+                buzzer_stop();
+            } else {
+                ESP_LOGI(TAG, "Button A pressed. Playing default buzzer note.");
+                buzzer_play_default_note();
+            }
+        }
+    }
     if (event == BUTTON_EVENT_PRESS) {
         ESP_LOGI(TAG, "Button %c pressed.", button_label);
         g_current_button_pressed = button_label;
@@ -184,7 +199,7 @@ void app_main(void)
     static char btn_a_label = 'A';
     button_config_t btn_a_conf = {
         .gpio_num = BUTTON_A_GPIO,
-        .active_level = 0,
+        .active_level = 1,
         .long_press_ms = 0,
         .user_data = &btn_a_label
     };
@@ -212,6 +227,14 @@ void app_main(void)
     };
     button_handle_t btn_c = button_create(&btn_c_conf);
     button_register_callback(btn_c, on_general_button_event);
+
+    // 8. Initialize Buzzer
+    buzzer_note_t custom_default_note = {
+        .play_duration_ms = 100,
+        .pause_duration_ms = 100,
+        .repeat_count = 60
+    };
+    buzzer_init(BUZZER_GPIO, &custom_default_note); // Pass the custom note
 
     ESP_LOGI(TAG, "All components initialized. Starting display task.");
     if (xSemaphoreTake(lcd_mutex, portMAX_DELAY) == pdTRUE) {
